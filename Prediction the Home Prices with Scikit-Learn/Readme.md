@@ -4,3 +4,5 @@ Link: https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_bo
 
 Tools used: Python, Jupyter Notebook, Scipy, Pandas, Scikit-Learn and Numpy
 Requirements: Python, Pip Install (To install the modules above) and some IDE for development, in the development of the project Jupyter Notebook was used.
+
+*The name of the files and of the methods/classes/responses are in Portuguese
