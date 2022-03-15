@@ -1,5 +1,3 @@
-#Guide to Exploratory Data Analysis with Python and SQL Language
-
 #The following 10 questions were answered, based on the DSA Academy course.
 
 #1- What are the most common movie categories on IMDB?
