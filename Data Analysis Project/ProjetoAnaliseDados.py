@@ -1,24 +1,20 @@
-#Guia de Análise Exploratória de Dados com Python e Linguagem SQL
+#Guide to Exploratory Data Analysis with Python and SQL Language
 
-#Foram respondidas as seguintes 10 perguntas, baseadas no curso da DSA Academy.
+#The following 10 questions were answered, based on the DSA Academy course.
 
-#1- Quais são as categorias de filmes mais comuns no IMDB?
-#2- Qual o número de títulos Por gênero?
-#3- Qual a mediana de avaliação dos filmes por gênero?
-#4- Qual a mediana de avaliação dos filmes em relação ao ano de estréia?
-#5- Qual o número de filmes avaliados por gênero em relação ao ano de estréia?
-#6- Qual o filme com maior tempo de duração? Calcule os percentis.
-#7- Qual a relação entre duração e gênero?
-#8- Qual o número de filmes produzidos por país?
-#9- Quais são os Top 10 melhores filmes?
-#10- Quais são os Top 10 piores filmes?
+#1- What are the most common movie categories on IMDB?
+#2- How many titles by genre?
+#3- What is the median rating of films by genre?
+#4- What is the median rating of films in relation to the year they were released?
+#5- What is the number of films evaluated by genre in relation to the year of release?
+#6- What is the longest running movie? Calculate percentiles.
+#7- What is the relationship between duration and gender?
+#8- What is the number of films produced per country?
+#9- What are the Top 10 best movies?
+#10- What are the Top 10 worst movies?
 
-# Instala o pacote, banco de dados já existente.
 !pip install -q imdb-sqlite
 
-# Instala o pacote
-
-# Imports
 import re
 import time
 import sqlite3
@@ -33,26 +29,19 @@ import warnings
 warnings.filterwarnings("ignore")
 sns.set_theme(style = "whitegrid")
 
-#Função própria do Jupyter Notebook, que foi a IDE utilizada no projeto.
 %%time
 !imdb-sqlite
 
-# Conecta no banco de dados
 conn = sqlite3.connect("imdb.db")
 
-# Extrai a lista de tabelas
 tabelas = pd.read_sql_query("SELECT NAME AS 'Table_Name' FROM sqlite_master WHERE type = 'table'", conn)
 
-# Tipo do objeto
 type(tabelas)
 
-# Visualiza o resultado
 tabelas.head()
 
-# Convertendo o dataframe em uma lista
 tabelas = tabelas["Table_Name"].values.tolist()
 
-# Percorrendo a lista de tabelas no banco de dados e extraindo o esquema de cada uma
 for tabela in tabelas:
     consulta = "PRAGMA TABLE_INFO({})".format(tabela)
     resultado = pd.read_sql_query(consulta, conn)
@@ -62,65 +51,65 @@ for tabela in tabelas:
     print("\n")
 
 
-#Respondendo as perguntas.
+#Answering the questions.
 
-#1- Quais são as categorias de filmes mais comuns no IMDB?
+#1- What are the most common movie categories on IMDB?
 
-# Cria a consulta SQL
+# Create the SQL query
 consulta1 = '''SELECT type, COUNT(*) AS COUNT FROM titles GROUP BY type''' 
 
-# Extrai o resultado
+# Extract the result
 resultado1 = pd.read_sql_query(consulta1, conn)
 
-# Visualiza o resultado
+# View the result
 display(resultado1)
 
-# Calculando o percentual para cada tipo
+# Calculating the percentage for each type
 resultado1['percentual'] = (resultado1['COUNT'] / resultado1['COUNT'].sum()) * 100
 
-# Visualiza o resultado
+# View the result
 display(resultado1)
 
-# Criando um gráfico com apenas 4 categorias:
-# As 3 categorias com mais títulos e 1 categoria com todo o restante
+# Creating a chart with only 4 categories:
+# The 3 categories with the most titles and 1 category with everything else
 
-# Criando um dicionário vazio
+# Creating an empty dictionary
 others = {}
 
-# Filtra o percentual em 5% e soma o total
+# Filter the percentage by 5% and add the total
 others['COUNT'] = resultado1[resultado1['percentual'] < 5]['COUNT'].sum()
 
-# Grava o percentual
+# Write the percentage
 others['percentual'] = resultado1[resultado1['percentual'] < 5]['percentual'].sum()
 
-# Ajusta o nome
+# Set the name
 others['type'] = 'others'
 
-# Visualizando
+# viewing
 others
 
-# Filtra o dataframe de resultado
+# Filter the result dataframe
 resultado1 = resultado1[resultado1['percentual'] > 5]
 
-# Append com o dataframe de outras categorias
+# Append with dataframe from other categories
 resultado1 = resultado1.append(others, ignore_index = True)
 
-# Ordena o resultado
+# Sort the result
 resultado1 = resultado1.sort_values(by = 'COUNT', ascending = False)
 
-# Visualiza
+# view
 resultado1.head()
 
-# Ajusta os labels
+# Adjust labels
 labels = [str(resultado1['type'][i])+' '+'['+str(round(resultado1['percentual'][i],2)) +'%'+']' for i in resultado1.index]
 
 # Plot
 
-# Mapa de cores
+# color map
 # https://matplotlib.org/stable/tutorials/colors/colormaps.html
 cs = cm.Set3(np.arange(100))
 
-# Cria a figura
+# Create the figure
 f = plt.figure()
 
 # Pie Plot
@@ -129,24 +118,24 @@ plt.legend(labels = labels, loc = 'center', prop = {'size':12})
 plt.title("Distribuição de Títulos", loc = 'Center', fontdict = {'fontsize':20,'fontweight':20})
 plt.show()
 
-#2- Qual o número de títulos Por gênero?
+#2- How many titles by genre?
 
-# Cria a consulta SQL
+# Create the SQL query
 consulta2 = '''SELECT genres, COUNT(*) FROM titles WHERE type = 'movie' GROUP BY genres''' 
 
-# Resultado
+# Result
 resultado2 = pd.read_sql_query(consulta2, conn)
 
-# Visualiza o resultado
+# View the result
 display(resultado2)
 
-# Converte as strings para minúsculo
+# Convert strings to lowercase
 resultado2['genres'] = resultado2['genres'].str.lower().values
 
-# Remove valores NA (ausentes)
+# Remove NA (missing) values
 temp = resultado2['genres'].dropna()
 
-# Criando um vetor usando expressão regular para filtrar as strings
+# Creating an array using regular expression to filter strings
 
 # https://docs.python.org/3.8/library/re.html
 padrao = '(?u)\\b[\\w-]+\\b'
@@ -157,27 +146,27 @@ vetor = CountVectorizer(token_pattern = padrao, analyzer = 'word').fit(temp)
 type(vetor)
 sklearn.feature_extraction.text.CountVectorizer
 
-# Aplica a vetorização ao dataset sem valores NA
+# Apply vectorization to dataset without NA values
 bag_generos = vetor.transform(temp)
 
 type(bag_generos)
 
-# Retorna gêneros únicos
+# Return unique genres
 generos_unicos =  vetor.get_feature_names()
 
-# Cria o dataframe de gêneros
+# Create the genre dataframe
 generos = pd.DataFrame(bag_generos.todense(), columns = generos_unicos, index = temp.index)
 
-# Visualiza
+# view
 generos.info()
 
-# Drop da coluna n
+# Drop from column n
 generos = generos.drop(columns = 'n', axis = 0)
 
-# Calcula o percentual
+# Calculate the percentage
 generos_percentual = 100 * pd.Series(generos.sum()).sort_values(ascending = False) / generos.shape[0]
 
-# Visualiza
+# view
 generos_percentual.head(10)
 
 # Plot
@@ -188,22 +177,22 @@ plt.xlabel("\nPercentual de Filmes (%)")
 plt.title('\nNúmero (Percentual) de Títulos Por Gênero\n')
 plt.show()
 
-#3- Qual a mediana de avaliação dos filmes Por gênero?
+#3- What is the median rating of films by genre?
 
-# Consulta SQL
+# SQL Query
 consulta3 = '''
             SELECT rating, genres FROM 
             ratings JOIN titles ON ratings.title_id = titles.title_id 
             WHERE premiered <= 2022 AND type = 'movie'
             ''' 
 
-# Resultado
+# Result
 resultado3 = pd.read_sql_query(consulta3, conn)
 
-# Visualiza
+# view
 display(resultado3)
 
-# Criando uma função para retornar os genêros
+# Creating a function to return the genres
 def retorna_generos(df):
     df['genres'] = df['genres'].str.lower().values
     temp = df['genres'].dropna()
@@ -212,53 +201,53 @@ def retorna_generos(df):
     generos_unicos = [genre for genre in generos_unicos if len(genre) > 1]
     return generos_unicos
 
-# Aplica a função
+# Apply the function
 generos_unicos = retorna_generos(resultado3)
 
-# Visualiza
+# view
 generos_unicos
 
-# Criando listas vazias
+# Creating empty lists
 genero_counts = []
 genero_ratings = []
 
 # Loop
 for item in generos_unicos:
     
-    # Retorna a contagem de filmes por gênero
+    # Returns the movie count by genre
     consulta = 'SELECT COUNT(rating) FROM ratings JOIN titles ON ratings.title_id=titles.title_id WHERE genres LIKE '+ '\''+'%'+item+'%'+'\' AND type=\'movie\''
     resultado = pd.read_sql_query(consulta, conn)
     genero_counts.append(resultado.values[0][0])
   
-     # Retorna a avaliação de filmes por gênero
+    # Returns the rating of movies by genre
     consulta = 'SELECT rating FROM ratings JOIN titles ON ratings.title_id=titles.title_id WHERE genres LIKE '+ '\''+'%'+item+'%'+'\' AND type=\'movie\''
     resultado = pd.read_sql_query(consulta, conn)
     genero_ratings.append(np.median(resultado['rating']))
     
-# Prepara o dataframe final
+# Prepare the final dataframe
 df_genero_ratings = pd.DataFrame()
 df_genero_ratings['genres'] = generos_unicos
 df_genero_ratings['count'] = genero_counts
 df_genero_ratings['rating'] = genero_ratings
 
-# Visualiza
+# view
 df_genero_ratings.head(20)
 
-# Drop do índice 18 (news), apenas tirando a informação como gênero
+# Drop from index 18 (news), just taking out the information like genre
 df_genero_ratings = df_genero_ratings.drop(index = 18)
 
-# Ordena o resultado
+# Sort the result
 df_genero_ratings = df_genero_ratings.sort_values(by = 'rating', ascending = False)
 
 # Plot
 
-# Figura
+# Figure
 plt.figure(figsize = (16,10))
 
 # Barplot
 sns.barplot(y = df_genero_ratings.genres, x = df_genero_ratings.rating, orient = "h")
 
-# Textos do gráfico
+# Graph texts
 for i in range(len(df_genero_ratings.index)):
     
     plt.text(4.0, 
@@ -274,9 +263,9 @@ plt.xlabel('Mediana da Avaliação')
 plt.title('\nMediana de Avaliação Por Gênero\n')
 plt.show()
 
-#4- Qual a mediana de avaliação dos filmes em relação ao ano de estréia?
+#4- What is the median rating of films in relation to the year they were released?
 
-# Consulta SQL
+# SQL Query
 consulta4 = '''
             SELECT rating AS Rating, premiered FROM 
             ratings JOIN titles ON ratings.title_id = titles.title_id 
@@ -284,26 +273,26 @@ consulta4 = '''
             ORDER BY premiered
             ''' 
 
-# Resultado
+# Result
 resultado4 = pd.read_sql_query(consulta4, conn)
 
 display(resultado4)
 
-# Calculamos a mediana ao longo do tempo (anos)
+# We calculate the median over time (years)
 ratings = []
 for year in set(resultado4['premiered']):
     ratings.append(np.median(resultado4[resultado4['premiered'] == year]['Rating']))
     
-# Verificando o tipo    
+# Checking the type    
 type(ratings)
 
-# Verificadndo como lista
+# Checking as list
 ratings[1:10]
 
-# Lista de anos
+# List of years
 anos = list(set(resultado4['premiered']))
 
-#Verificando a lista de anos
+#Checking the list of years
 anos[1:10]
 
 # Plot
@@ -314,46 +303,46 @@ plt.ylabel('Mediana de Avaliação')
 plt.title('\nMediana de Avaliação dos Filmes Em Relação ao Ano de Estréia\n')
 plt.show()
 
-#5- Qual o número de filmes avaliados por gênero em relação ao ano de estréia?
+#5- What is the number of films evaluated by genre in relation to the year of release?
 
-# Consulta SQL
+# SQL Query
 consulta5 = '''SELECT genres FROM titles ''' 
 
-# Resultado
+# Result
 resultado5 = pd.read_sql_query(consulta5, conn)
 
-# Visualizando o resultado
+# Viewing the result
 display(resultado5)
 
-# Retorna gêneros únicos
+# Return unique genres
 generos_unicos = retorna_generos(resultado5)
 
-# Visualiza o resultado
+# View the result
 generos_unicos
 
-# Fazendo a contagem
+# Making the count
 genero_count = []
 for item in generos_unicos:
     consulta = 'SELECT COUNT(*) COUNT FROM  titles  WHERE genres LIKE '+ '\''+'%'+item+'%'+'\' AND type=\'movie\' AND premiered <= 2022'
     resultado = pd.read_sql_query(consulta, conn)
     genero_count.append(resultado['COUNT'].values[0])
 
-# Preparando o dataframe
+# Preparing the dataframe
 df_genero_count = pd.DataFrame()
 df_genero_count['genre'] = generos_unicos
 df_genero_count['Count'] = genero_count
 
-# Calculando os top 5
+# Calculating the top 5
 df_genero_count = df_genero_count[df_genero_count['genre'] != 'n']
 df_genero_count = df_genero_count.sort_values(by = 'Count', ascending = False)
 top_generos = df_genero_count.head()['genre'].values
 
 # Plot
 
-# Figura
+# Figure
 plt.figure(figsize = (16,8))
 
-# Loop e Plot
+# Loop and Plot
 for item in top_generos:
     consulta = 'SELECT COUNT(*) Number_of_movies, premiered Year FROM  titles  WHERE genres LIKE '+ '\''+'%'+item+'%'+'\' AND type=\'movie\' AND Year <=2022 GROUP BY Year'
     resultado = pd.read_sql_query(consulta, conn)
@@ -365,28 +354,28 @@ plt.title('\nNúmero de Filmes Avaliados Por Gênero Em Relação ao Ano de Estr
 plt.legend(labels = top_generos)
 plt.show()
 
-#6- Qual o filme com maior tempo de duração? Calculando os percentis.
+#6- What is the longest running movie? Calculating percentiles.
 
-# Consulta SQL
+# SQL Query
 consulta6 = '''
             SELECT runtime_minutes Runtime 
             FROM titles 
             WHERE type = 'movie' AND Runtime != 'NaN'
             ''' 
 
-# Resultado
+# Result
 resultado6 = pd.read_sql_query(consulta6, conn)
 
-# Visualiza
+# view
 display(resultado6)
 
-# Loop para cálculo dos percentis
+# Loop to calculate percentiles
 for i in range(101): 
     val = i
     perc = round(np.percentile(resultado6['Runtime'].values, val), 2)
     print('{} percentil da duração (runtime) é: {}'.format(val, perc))
 
-# Refazendo a consulta e retornando o filme com maior duração
+# Redoing the query and returning the movie with the longest duration
 consulta6 = '''
             SELECT runtime_minutes Runtime, primary_title
             FROM titles 
@@ -394,15 +383,15 @@ consulta6 = '''
             ORDER BY Runtime DESC
             LIMIT 1
             ''' 
-# Lendo a query
+# Reading the query
 resultado6 = pd.read_sql_query(consulta6, conn)
 
-# Visualiza
+# view
 resultado6
 
-#7- Qual a Relação Entre Duração e Gênero?
+#7- What is the Relationship Between Duration and Genre?
 
-# Consulta SQL
+# SQL Query
 consulta7 = '''
             SELECT AVG(runtime_minutes) Runtime, genres 
             FROM titles 
@@ -411,36 +400,36 @@ consulta7 = '''
             GROUP BY genres
             ''' 
 
-# Resultado
+# Result
 resultado7 = pd.read_sql_query(consulta7, conn)
 
-# Retorna gêneros únicos
+# Return unique genres
 generos_unicos = retorna_generos(resultado7)
 
-# Visualiza
+# view
 generos_unicos
 
-# Calcula duração por gênero
+# Calculate duration by genre
 genero_runtime = []
 for item in generos_unicos:
     consulta = 'SELECT runtime_minutes Runtime FROM  titles  WHERE genres LIKE '+ '\''+'%'+item+'%'+'\' AND type=\'movie\' AND Runtime!=\'NaN\''
     resultado = pd.read_sql_query(consulta, conn)
     genero_runtime.append(np.median(resultado['Runtime']))
     
-# Prepara o dataframe
+# Prepare the dataframe
 df_genero_runtime = pd.DataFrame()
 df_genero_runtime['genre'] = generos_unicos
 df_genero_runtime['runtime'] = genero_runtime
 
-# Remove índice 18 (news)
+# Remove index 18 (news)
 df_genero_runtime = df_genero_runtime.drop(index = 18)
 
-# Ordena os dados
+# Sort the data
 df_genero_runtime = df_genero_runtime.sort_values(by = 'runtime', ascending = False)
 
 # Plot
 
-# Tamanho da figura
+# Figure size
 plt.figure(figsize = (16,8))
 
 # Barplot
@@ -457,9 +446,9 @@ plt.xlabel('\nMediana de Tempo de Duração (Minutos)')
 plt.title('\nRelação Entre Duração e Gênero\n')
 plt.show()
 
-#8- Qual o Número de Filmes Produzidos Por País?
+#8- What is the Number of Films Produced by Country?
 
-# Consulta SQL
+# SQL Query
 consulta8 = '''
             SELECT region, COUNT(*) Number_of_movies FROM 
             akas JOIN titles ON 
@@ -469,23 +458,23 @@ consulta8 = '''
             GROUP BY region
             ''' 
 
-# Resultado
+# Result
 resultado8 = pd.read_sql_query(consulta8, conn)
 
-# Visualiza
+# view
 display(resultado8)
 
-# Verificando o Shape
+# Checking the Shape
 resultado8.shape
 
-# Número de linhas
+# Number of lines
 resultado8.shape[0]
 
-# Listas auxiliares
+# auxiliary lists
 nomes_paises = []
 contagem = []
 
-# Loop para obter o país de acordo com a região
+# Loop to get country according to region
 for i in range(resultado8.shape[0]):
     try:
         coun = resultado8['region'].values[i]
@@ -494,20 +483,20 @@ for i in range(resultado8.shape[0]):
     except: 
         continue
         
-# Prepara o dataframe
+# Prepare the dataframe
 df_filmes_paises = pd.DataFrame()
 df_filmes_paises['country'] = nomes_paises
 df_filmes_paises['Movie_Count'] = contagem
 
-# Ordena o resultado
+# Sort the result
 df_filmes_paises = df_filmes_paises.sort_values(by = 'Movie_Count', ascending = False)
 
-# Visualiza
+# view
 df_filmes_paises.head(10)
 
 # Plot
 
-# Figura
+# Figure
 plt.figure(figsize = (20,8))
 
 # Barplot
@@ -524,9 +513,9 @@ plt.xlabel('\nNúmero de Filmes')
 plt.title('\nNúmero de Filmes Produzidos Por País\n')
 plt.show()
 
-#9- Quais são os Top 10 melhores filmes?
+#9- What are the Top 10 best movies?
 
-# Consulta SQL
+# SQL Query
 consulta9 = '''
             SELECT primary_title AS Movie_Name, genres, rating
             FROM 
@@ -537,15 +526,15 @@ consulta9 = '''
             LIMIT 10          
             ''' 
 
-# Resultado
+# Result
 top10_melhores_filmes = pd.read_sql_query(consulta9, conn)
 
-# Visualiza
+# View
 display(top10_melhores_filmes)
 
-#10- Quais são os Top 10 piores filmes?
+#10- What are the Top 10 Worst Movies?
 
-# Consulta SQL
+# SQL Query
 consulta10 = '''
             SELECT primary_title AS Movie_Name, genres, rating
             FROM 
@@ -556,11 +545,11 @@ consulta10 = '''
             LIMIT 10
             ''' 
 
-# Resultado
+# Result
 top10_piores_filmes = pd.read_sql_query(consulta10, conn)
 
-# Visualiza
+# View
 display(top10_piores_filmes)
 
 
-#Fim
+#End
